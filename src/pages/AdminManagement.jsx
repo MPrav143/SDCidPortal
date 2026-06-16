@@ -9,13 +9,15 @@ export default function AdminManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [members, setMembers] = useState([]);
   // Form State
   const [showAddForm, setShowAddForm] = useState(false);
   const [newAdmin, setNewAdmin] = useState({
     Name: "",
     Email: "",
     Role: "Admin",
-    Status: "Active"
+    Status: "Active",
+    MemberID: ""
   });
   const [formError, setFormError] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
@@ -29,6 +31,11 @@ export default function AdminManagement() {
         setAdmins(res.admins);
       } else {
         setError(res.message || "Failed to load admins list");
+      }
+
+      const memRes = await api.getMembers();
+      if (!memRes.error) {
+        setMembers(memRes.members);
       }
     } catch (err) {
       console.error(err);
@@ -44,10 +51,39 @@ export default function AdminManagement() {
     }
   }, [isSuperAdmin]);
 
+  const handleMemberIdChange = (val) => {
+    const uppercaseVal = val.toUpperCase();
+    setNewAdmin(prev => {
+      const updated = { ...prev, MemberID: uppercaseVal };
+      const matched = members.find(m => m["Member ID"] === uppercaseVal);
+      if (matched) {
+        updated.Name = matched.Name;
+        updated.Email = matched.Email;
+        setFormError("");
+      }
+      return updated;
+    });
+  };
+
   const handleAddAdmin = async (e) => {
     e.preventDefault();
     setFormError("");
     
+    if (newAdmin.Role === 'Admin') {
+      if (!newAdmin.MemberID.trim()) return setFormError("Member ID is required for Admins");
+      if (!/^KCE-SDC-\d{2}-\d{3}$/.test(newAdmin.MemberID.trim())) {
+        return setFormError("Member ID must match format: KCE-SDC-YY-NNN");
+      }
+      const memberExists = members.some(m => m["Member ID"] === newAdmin.MemberID.trim());
+      if (!memberExists) {
+        return setFormError("Member ID not found in club database. Please register them as a member first.");
+      }
+      const adminExists = admins.some(a => a.ID === newAdmin.MemberID.trim());
+      if (adminExists) {
+        return setFormError("This member is already registered as an administrator.");
+      }
+    }
+
     if (!newAdmin.Name.trim()) return setFormError("Name is required");
     if (!newAdmin.Email.trim()) return setFormError("Email is required");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newAdmin.Email)) {
@@ -56,10 +92,16 @@ export default function AdminManagement() {
 
     setActionLoading(true);
     try {
-      // Generate standard ID
-      const nextId = String(admins.length + 1).padStart(3, '0');
+      let adminId;
+      if (newAdmin.Role === 'Admin') {
+        adminId = newAdmin.MemberID.trim();
+      } else {
+        const nextSaNum = admins.filter(a => a.Role === 'Super Admin').length + 1;
+        adminId = `SA-${String(nextSaNum).padStart(3, '0')}`;
+      }
+
       const adminData = {
-        ID: nextId,
+        ID: adminId,
         Name: newAdmin.Name.trim(),
         Email: newAdmin.Email.trim().toLowerCase(),
         Role: newAdmin.Role,
@@ -69,7 +111,7 @@ export default function AdminManagement() {
       const res = await api.addAdmin(adminData, user.email);
       if (!res.error) {
         // Reset form
-        setNewAdmin({ Name: "", Email: "", Role: "Admin", Status: "Active" });
+        setNewAdmin({ Name: "", Email: "", Role: "Admin", Status: "Active", MemberID: "" });
         setShowAddForm(false);
         fetchAdmins();
       } else {
@@ -117,7 +159,35 @@ export default function AdminManagement() {
     if (!window.confirm(`Are you sure you want to change role of ${admin.Email} to ${newRole}?`)) return;
 
     try {
-      const updatedAdmin = { ...admin, Role: newRole };
+      let updatedId = admin.ID;
+      if (newRole === 'Admin' && (!admin.ID || admin.ID.startsWith('SA-'))) {
+        const memberIdInput = prompt("Enter Member ID for this Admin (e.g. KCE-SDC-26-001):");
+        if (!memberIdInput) {
+          alert("Role change cancelled: Member ID is required for Admin role.");
+          return;
+        }
+        const formattedId = memberIdInput.trim().toUpperCase();
+        if (!/^KCE-SDC-\d{2}-\d{3}$/.test(formattedId)) {
+          alert("Invalid Member ID format. Must match KCE-SDC-YY-NNN.");
+          return;
+        }
+        const memberExists = members.some(m => m["Member ID"] === formattedId);
+        if (!memberExists) {
+          alert("Member ID not found in club database. Register them as a member first.");
+          return;
+        }
+        const adminExists = admins.some(a => a.ID === formattedId);
+        if (adminExists) {
+          alert("This member is already registered as an administrator.");
+          return;
+        }
+        updatedId = formattedId;
+      } else if (newRole === 'Super Admin' && !admin.ID.startsWith('SA-')) {
+        const nextSaNum = admins.filter(a => a.Role === 'Super Admin').length + 1;
+        updatedId = `SA-${String(nextSaNum).padStart(3, '0')}`;
+      }
+
+      const updatedAdmin = { ...admin, Role: newRole, ID: updatedId };
       const res = await api.updateAdmin(updatedAdmin, user.email);
       if (!res.error) {
         fetchAdmins();
@@ -202,36 +272,21 @@ export default function AdminManagement() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-navy-800 mb-1">Full Name</label>
-              <input
-                type="text"
-                placeholder="e.g. SDC Instructor"
-                value={newAdmin.Name}
-                onChange={(e) => setNewAdmin(prev => ({ ...prev, Name: e.target.value }))}
-                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-navy-100 focus:outline-none focus:border-gold-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-navy-800 mb-1">KCE Email ID</label>
-              <input
-                type="email"
-                placeholder="e.g. staff@kce.ac.in"
-                value={newAdmin.Email}
-                onChange={(e) => setNewAdmin(prev => ({ ...prev, Email: e.target.value }))}
-                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-navy-100 focus:outline-none focus:border-gold-500"
-              />
-            </div>
-
-            <div>
               <label className="block text-[10px] font-bold uppercase tracking-wider text-navy-800 mb-1">Admin Access Role</label>
               <select
                 value={newAdmin.Role}
-                onChange={(e) => setNewAdmin(prev => ({ ...prev, Role: e.target.value }))}
+                onChange={(e) => {
+                  const role = e.target.value;
+                  setNewAdmin(prev => ({ 
+                    ...prev, 
+                    Role: role, 
+                    MemberID: role === 'Super Admin' ? '' : prev.MemberID 
+                  }));
+                }}
                 className="w-full text-xs px-3 py-2.5 rounded-xl border border-navy-100 focus:outline-none focus:border-gold-500 bg-white"
               >
-                <option value="Admin">Admin (Can edit members only)</option>
-                <option value="Super Admin">Super Admin (Full control)</option>
+                <option value="Admin">Admin (Associated with Club Member)</option>
+                <option value="Super Admin">Super Admin (Faculty/System Administrator)</option>
               </select>
             </div>
 
@@ -245,6 +300,45 @@ export default function AdminManagement() {
                 <option value="Active">Active (Grant Entry)</option>
                 <option value="Inactive">Inactive (Revoke Access)</option>
               </select>
+            </div>
+
+            {newAdmin.Role === 'Admin' && (
+              <div className="sm:col-span-2">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-navy-850 mb-1">
+                  Associate Member ID <span className="text-red-650 font-bold">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. KCE-SDC-26-001 (Auto-completes Name & Email)"
+                  value={newAdmin.MemberID}
+                  onChange={(e) => handleMemberIdChange(e.target.value)}
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-navy-100 focus:outline-none focus:border-gold-500 bg-navy-50/20 font-semibold"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-navy-800 mb-1">Full Name</label>
+              <input
+                type="text"
+                placeholder="e.g. SDC Instructor"
+                value={newAdmin.Name}
+                onChange={(e) => setNewAdmin(prev => ({ ...prev, Name: e.target.value }))}
+                disabled={newAdmin.Role === 'Admin'}
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-navy-100 focus:outline-none focus:border-gold-500 disabled:bg-slate-50 disabled:text-slate-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-navy-800 mb-1">KCE Email ID</label>
+              <input
+                type="email"
+                placeholder="e.g. staff@kce.ac.in"
+                value={newAdmin.Email}
+                onChange={(e) => setNewAdmin(prev => ({ ...prev, Email: e.target.value }))}
+                disabled={newAdmin.Role === 'Admin'}
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-navy-100 focus:outline-none focus:border-gold-500 disabled:bg-slate-50 disabled:text-slate-500"
+              />
             </div>
           </div>
 

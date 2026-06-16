@@ -299,8 +299,12 @@ export default function MemberList() {
               {/* Profile Details Row */}
               <div className="flex gap-4">
                 <img
-                  src={member["Photo URL"] || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100'}
+                  src={member["Photo URL"] || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.Name)}&background=0f172a&color=e2c58a&bold=true`}
                   alt={member.Name}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.Name)}&background=0f172a&color=e2c58a&bold=true`;
+                  }}
                   className="w-16 h-16 rounded-xl border border-navy-50 object-cover shrink-0 bg-slate-50"
                 />
                 <div className="space-y-1 min-w-0">

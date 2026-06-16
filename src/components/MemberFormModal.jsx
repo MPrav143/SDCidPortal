@@ -17,8 +17,10 @@ export default function MemberFormModal({ isOpen, onClose, onSave, member, exist
 
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
 
   useEffect(() => {
+    setPreviewError(false);
     if (member) {
       setFormData({ ...member });
     } else {
@@ -91,24 +93,6 @@ export default function MemberFormModal({ isOpen, onClose, onSave, member, exist
     setErrors(prev => ({ ...prev, "Member ID": "" }));
   };
 
-  // Handle image upload & convert to base64
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, "Photo URL": "Image size must be less than 2MB" }));
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, "Photo URL": reader.result }));
-        setErrors(prev => ({ ...prev, "Photo URL": "" }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const validate = () => {
     const newErrors = {};
     
@@ -142,7 +126,7 @@ export default function MemberFormModal({ isOpen, onClose, onSave, member, exist
     }
 
     if (!formData["Photo URL"]) {
-      newErrors["Photo URL"] = "Photo is required";
+      newErrors["Photo URL"] = "Photo URL is required";
     }
 
     setErrors(newErrors);
@@ -187,48 +171,53 @@ export default function MemberFormModal({ isOpen, onClose, onSave, member, exist
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           {errors.submit && (
-            <div className="bg-red-50 border border-red-200 text-red-800 text-xs rounded-lg p-3">
+            <div className="bg-red-50 border border-red-200 text-red-850 text-xs rounded-lg p-3">
               {errors.submit}
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Image Upload Column */}
+            {/* Image URL Input and Live Preview Column */}
             <div className="flex flex-col items-center gap-3">
               <label className="text-xs font-bold uppercase tracking-wider text-navy-800 self-start">
                 Profile Photo
               </label>
               
-              <div className="relative group w-36 h-36 rounded-2xl border-2 border-dashed border-navy-200 hover:border-gold-500 bg-navy-50/50 flex flex-col items-center justify-center overflow-hidden transition-all duration-200">
-                {formData["Photo URL"] ? (
-                  <>
-                    <img 
-                      src={formData["Photo URL"]} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-navy-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <Upload size={20} className="text-white" />
-                    </div>
-                  </>
+              <div className="relative w-36 h-36 rounded-2xl border border-navy-200 bg-navy-50/50 flex flex-col items-center justify-center overflow-hidden transition-all duration-200 shadow-sm shrink-0">
+                {formData["Photo URL"] && !previewError ? (
+                  <img 
+                    src={formData["Photo URL"]} 
+                    alt="Live Preview" 
+                    onError={() => setPreviewError(true)}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <div className="flex flex-col items-center gap-1.5 text-navy-400">
-                    <User size={32} className="stroke-[1.5]" />
-                    <span className="text-[10px] font-medium">Upload Image</span>
+                  <div className="flex flex-col items-center gap-1.5 text-navy-450">
+                    <User size={32} className="stroke-[1.5] text-navy-400" />
+                    <span className="text-[10px] font-bold text-slate-500">Avatar Placeholder</span>
                   </div>
                 )}
+              </div>
+
+              <div className="w-full space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-navy-850">
+                  Image Web URL
+                </label>
                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  type="url"
+                  placeholder="https://example.com/photo.jpg"
+                  value={formData["Photo URL"] || ""}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, "Photo URL": e.target.value }));
+                    setPreviewError(false);
+                    setErrors(prev => ({ ...prev, "Photo URL": "" }));
+                  }}
+                  className="w-full text-xs px-2.5 py-2 rounded-lg border border-navy-200 focus:outline-none focus:border-gold-500 bg-white"
                 />
               </div>
-              <p className="text-[10px] text-navy-400 text-center">
-                JPG, PNG. Max 2MB size.
-              </p>
+
               {errors["Photo URL"] && (
-                <span className="text-[10px] font-semibold text-red-600 text-center">{errors["Photo URL"]}</span>
+                <span className="text-[10px] font-semibold text-red-650 text-center">{errors["Photo URL"]}</span>
               )}
             </div>
 
