@@ -405,8 +405,12 @@ export default function Dashboard() {
                 ) : (
                   <div className="flex gap-4">
                     <img 
-                      src={simResult.member["Photo URL"] || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100'} 
+                      src={simResult.member["Photo URL"] || `https://ui-avatars.com/api/?name=${encodeURIComponent(simResult.member.Name)}&background=0f172a&color=e2c58a&bold=true`} 
                       alt={simResult.member.Name} 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(simResult.member.Name)}&background=0f172a&color=e2c58a&bold=true`;
+                      }}
                       className="w-16 h-16 rounded-xl object-cover border border-gold-500/20 shrink-0 bg-white"
                     />
                     <div className="space-y-1 min-w-0 flex-1">

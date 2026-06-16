@@ -5,6 +5,33 @@ import { useNavigate } from 'react-router-dom';
 import Tesseract from 'tesseract.js';
 import { Camera, Scan, CheckCircle, AlertTriangle, RefreshCw, Smartphone, Play, Square, Volume2, Shield, LogIn, ChevronRight, Server, Terminal, User, BookOpen, Mail, Phone, Award } from 'lucide-react';
 
+const LogoImage = ({ src, alt, fallbackText, className }) => {
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0); // 0: png, 1: svg, 2: jpg
+
+  if (error || attempt >= 3) {
+    return (
+      <div className="inline-flex items-center justify-center bg-navy-900 border border-gold-500/30 rounded px-2.5 py-1 text-gold-500 text-[10px] font-bold uppercase tracking-wider select-none shrink-0">
+        {fallbackText}
+      </div>
+    );
+  }
+
+  const extensions = ['.png', '.svg', '.jpg'];
+  const currentSrc = `${src}${extensions[attempt]}`;
+
+  return (
+    <img 
+      src={currentSrc} 
+      alt={alt} 
+      onError={() => {
+        setAttempt(prev => prev + 1);
+      }} 
+      className={className} 
+    />
+  );
+};
+
 export default function Home({ onOpenSettings }) {
   const { 
     user, 
@@ -257,9 +284,8 @@ export default function Home({ onOpenSettings }) {
       {/* Header Bar */}
       <header className="border-b border-navy-50 py-4 px-6 bg-white/95 sticky top-0 z-30 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-navy-900 flex items-center justify-center font-display font-bold text-gold-500 text-base shadow-sm">
-            K
-          </div>
+          <LogoImage src="/kce" alt="KCE Logo" fallbackText="KCE" className="w-9 h-9 rounded-lg object-contain bg-navy-900 p-0.5 border border-gold-500/30 shrink-0" />
+          <LogoImage src="/sdc" alt="SDC Logo" fallbackText="SDC" className="w-9 h-9 rounded-lg object-contain bg-navy-900 p-0.5 border border-gold-500/30 shrink-0 hidden xs:block" />
           <div>
             <h1 className="font-display font-bold text-sm text-navy-900 tracking-tight leading-none">
               Karpagam College of Engineering
@@ -286,8 +312,10 @@ export default function Home({ onOpenSettings }) {
         
         {/* PUBLIC BRANDING HEADER SECTION */}
         <section className="text-center space-y-4 py-4 max-w-2xl mx-auto">
-          <div className="w-16 h-16 rounded-3xl bg-navy-950 border-2 border-gold-500 flex items-center justify-center font-display font-extrabold text-gold-500 text-3xl shadow-xl shadow-gold-500/10 mx-auto">
-            K
+          <div className="flex items-center justify-center gap-3.5 mx-auto">
+            <LogoImage src="/kce" alt="KCE Logo" fallbackText="KCE" className="w-16 h-16 rounded-3xl object-contain bg-navy-950 p-2 border-2 border-gold-500 shadow-xl shadow-gold-500/10 shrink-0" />
+            <LogoImage src="/sdc" alt="SDC Logo" fallbackText="SDC" className="w-16 h-16 rounded-3xl object-contain bg-navy-950 p-2 border-2 border-gold-500 shadow-xl shadow-gold-500/10 shrink-0" />
+            <LogoImage src="/MyCampus" alt="MyCampus Logo" fallbackText="MyCampus" className="w-16 h-16 rounded-3xl object-contain bg-navy-950 p-2 border-2 border-gold-500 shadow-xl shadow-gold-500/10 hidden sm:block shrink-0" />
           </div>
           <div className="space-y-1">
             <h2 className="text-xs font-bold text-gold-600 tracking-[0.25em] uppercase">KARPAGAM COLLEGE OF ENGINEERING</h2>
@@ -459,8 +487,12 @@ export default function Home({ onOpenSettings }) {
                       {/* Photo + Detail Grid */}
                       <div className="p-4 bg-gradient-to-b from-white to-slate-50 flex flex-col items-center">
                         <img 
-                          src={verifiedMember["Photo URL"] || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100'} 
+                          src={verifiedMember["Photo URL"] || `https://ui-avatars.com/api/?name=${encodeURIComponent(verifiedMember.Name)}&background=0f172a&color=e2c58a&bold=true`} 
                           alt="Photo" 
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(verifiedMember.Name)}&background=0f172a&color=e2c58a&bold=true`;
+                          }}
                           className="w-20 h-20 rounded-xl border border-navy-950 object-cover shadow-sm bg-slate-100 mb-3"
                         />
                         
@@ -574,7 +606,12 @@ export default function Home({ onOpenSettings }) {
       </main>
 
       {/* Footer Info */}
-      <footer className="border-t border-navy-50 py-6 text-center text-xs text-navy-500 space-y-1">
+      <footer className="border-t border-navy-50 py-6 text-center text-xs text-navy-500 space-y-4">
+        <div className="flex items-center justify-center gap-6">
+          <LogoImage src="/kce" alt="KCE Logo" fallbackText="KCE" className="h-8 object-contain opacity-80 hover:opacity-100 transition-opacity" />
+          <LogoImage src="/sdc" alt="SDC Logo" fallbackText="SDC" className="h-8 object-contain opacity-80 hover:opacity-100 transition-opacity" />
+          <LogoImage src="/MyCampus" alt="MyCampus Logo" fallbackText="MyCampus" className="h-8 object-contain opacity-80 hover:opacity-100 transition-opacity" />
+        </div>
         <p>&copy; {new Date().getFullYear()} Karpagam College of Engineering. All rights reserved.</p>
         <p className="font-mono text-[9px] text-slate-400">Powered by Google Sheets database integration & Tesseract OCR engine</p>
       </footer>

@@ -141,17 +141,15 @@ export default function MemberProfile() {
             {/* Photo Frame */}
             <div className="relative">
               <div className="w-32 h-32 rounded-2xl border-[3px] border-navy-950 overflow-hidden bg-slate-50 shadow-md">
-                {member["Photo URL"] ? (
-                  <img
-                    src={member["Photo URL"]}
-                    alt={member.Name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-navy-200">
-                    <User size={48} className="stroke-[1.5]" />
-                  </div>
-                )}
+                <img
+                  src={member["Photo URL"] || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.Name)}&background=0f172a&color=e2c58a&bold=true`}
+                  alt={member.Name}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.Name)}&background=0f172a&color=e2c58a&bold=true`;
+                  }}
+                  className="w-full h-full object-cover"
+                />
               </div>
               
               {/* Active Badge overlapping photo */}

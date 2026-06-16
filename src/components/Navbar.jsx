@@ -3,6 +3,33 @@ import { useAuth } from '../context/AuthContext';
 import { LogOut, Settings, Server, Key, Shield, User } from 'lucide-react';
 import { getApiUrl, setApiUrl } from '../services/api';
 
+const LogoImage = ({ src, alt, fallbackText, className }) => {
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0); // 0: png, 1: svg, 2: jpg
+
+  if (error || attempt >= 3) {
+    return (
+      <div className="inline-flex items-center justify-center bg-navy-900 border border-gold-500/30 rounded text-gold-500 text-[10px] font-bold uppercase tracking-wider select-none shrink-0 w-8 h-8 sm:w-10 sm:h-10">
+        {fallbackText}
+      </div>
+    );
+  }
+
+  const extensions = ['.png', '.svg', '.jpg'];
+  const currentSrc = `${src}${extensions[attempt]}`;
+
+  return (
+    <img 
+      src={currentSrc} 
+      alt={alt} 
+      onError={() => {
+        setAttempt(prev => prev + 1);
+      }} 
+      className={className} 
+    />
+  );
+};
+
 export default function Navbar({ onOpenSettings }) {
   const { user, adminRecord, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -10,9 +37,8 @@ export default function Navbar({ onOpenSettings }) {
   return (
     <header className="glass-panel border-b border-navy-100 bg-white/80 sticky top-0 z-40 backdrop-blur-md px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-2 sm:gap-3">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-navy-900 border border-gold-500/30 flex items-center justify-center font-display font-bold text-gold-500 text-sm sm:text-lg shadow-sm shrink-0">
-          K
-        </div>
+        <LogoImage src="/kce" alt="KCE Logo" fallbackText="K" className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-contain bg-navy-900 p-0.5 border border-gold-500/30 shrink-0" />
+        <LogoImage src="/sdc" alt="SDC Logo" fallbackText="SDC" className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-contain bg-navy-900 p-0.5 border border-gold-500/30 shrink-0 hidden xs:block" />
         <div className="min-w-0">
           <h1 className="font-display font-bold text-navy-900 text-sm sm:text-lg leading-tight tracking-tight truncate">
             Karpagam College of Engineering
